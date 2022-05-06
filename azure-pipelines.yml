@@ -1,0 +1,66 @@
+trigger : none
+pr : none
+
+stages :
+ - stage: validate
+   jobs:
+    - job: validate
+      continueOnError: false
+      steps:
+       - task: TerraformInstaller@0
+         displayName: 'installTerraform'
+         inputs:
+           terraformVersion: 'latest'
+       - task: TerraformTaskV2@2
+         displayName: 'init'
+         inputs:
+           provider: 'azurerm'
+           command: 'init'
+           backendServiceArm: 'IaC-Deployment'
+           backendAzureRmResourceGroupName: 'Terraform-AzureDevops'
+           backendAzureRmStorageAccountName: 'tfstrgdevops'
+           backendAzureRmContainerName: 'tfstatecontainer'
+           backendAzureRmKey: 'terraform.tfstate'
+       - task: TerraformTaskV2@2
+         displayName: 'Validate'
+         inputs:
+            provider: 'azurerm'
+            command: 'validate'
+ - stage : Deploy
+   jobs:
+    - deployment: deploy_terraform
+      continueOnError: false
+      environment: 'dev'
+      strategy:
+       runOnce:
+        deploy:
+         steps:
+         - checkout: self
+         - task: TerraformInstaller@0
+           displayName: 'install'
+           inputs:
+             terraformVersion: 'latest'
+         - task: TerraformTaskV2@2
+           displayName: 'init'
+           inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: 'IaC-Deployment'
+              backendAzureRmResourceGroupName: 'Terraform-AzureDevops'
+              backendAzureRmStorageAccountName: 'tfstrgdevops'
+              backendAzureRmContainerName: 'tfstatecontainer'
+              backendAzureRmKey: 'terraform.tfstate'
+         - task: TerraformTaskV2@2
+           displayName: 'plan'
+           inputs:
+             provider: 'azurerm'
+             command: 'plan'
+             commandOptions: '-lock=false -var-file "wvdbuild.tfvars"'
+             environmentServiceNameAzureRM: 'IaC-Deployment'
+         - task: TerraformTaskV2@2
+           displayName: 'Apply'
+           inputs:
+             provider: 'azurerm'
+             command: 'apply'
+             commandOptions: '-lock=false -var-file "wvdbuild.tfvars"'
+             environmentServiceNameAzureRM: 'IaC-Deployment'
