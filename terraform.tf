@@ -9,6 +9,7 @@ terraform {
         resource_group_name = "Terraform-AzureDevops"
         strorage_account_name = "tfstrgdevops"
         container_name = "tfstatecontainer"
+        access_key = ""
       }
 
 }
