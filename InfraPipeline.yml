@@ -1,0 +1,63 @@
+trigger : none
+pr : none
+pool:
+ vmImage: "ubuntu-latest"
+stages :
+ - stage: Terraform_Install_Init_Validate
+   displayName: Terraform Init & Validate
+   jobs:
+    - job: A
+      displayName: Job A - Just Terraform 
+      steps:
+      - bash: echo "Hello Stage A and Job A from Terraform"
+    - job: B
+      displayName: Job B - Terraform Install_Init_Validate
+      steps:
+      - task: TerraformInstaller@0
+        displayName: Terraform Install
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTaskV2@2
+        displayName: Terraform Init
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          backendServiceArm: 'Terraform Deployment Service Connection'
+          backendAzureRmResourceGroupName: 'Terraform_state_RG'
+          backendAzureRmStorageAccountName: 'terraformstrgaccount01'
+          backendAzureRmContainerName: 'terraformstate'
+          backendAzureRmKey: 'terraform.tfstate'
+      - task: TerraformTaskV2@2
+        displayName: Terraform Validate
+        inputs:
+          provider: 'azurerm'
+          command: 'validate'
+ - stage: Terraform_init_plan
+   displayName: Terraform Init & plan & Apply
+   jobs:
+     - job: A
+       displayName: Stage 2 - Terraform Init & plan
+       steps:
+        - task: TerraformTaskV2@2
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            backendServiceArm: 'Terraform Deployment Service Connection'
+            backendAzureRmResourceGroupName: 'Terraform_state_RG'
+            backendAzureRmStorageAccountName: 'terraformstrgaccount01'
+            backendAzureRmContainerName: 'terraformstate'
+            backendAzureRmKey: 'terraform.tfstate'
+        - task: TerraformTaskV2@2
+          displayName: Terraform Plan
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            commandOptions: '-var-file "dev.tfvars"'
+            environmentServiceNameAzureRM: 'Terraform Deployment Service Connection'
+        - task: TerraformTaskV2@2
+          displayName: Terraform Apply
+          inputs:
+            provider: 'azurerm'
+            command: 'apply'
+            commandOptions: '-var-file "dev.tfvars"'
+            environmentServiceNameAzureRM: 'Terraform Deployment Service Connection'
